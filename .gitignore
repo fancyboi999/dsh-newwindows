@@ -1,0 +1,37 @@
+# 依赖与临时安装
+node_modules
+node_modules/
+
+# 凭据与本地密钥防护
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.crt
+credentials.json
+token*.json
+
+# 运行时日志与本地会话痕迹
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+.dsh/
+runtime/
+history/
+
+# 构建产物与缓存
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# 编辑器与操作系统产物
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.tmp

@@ -1,0 +1,54 @@
+{
+  "name": "dsh-newwindows",
+  "version": "0.1.0",
+  "description": "Summary-free context window rollover, model-authored notes, and scoped raw history lookup plugin for DeepSeek Harness (DSH)",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fancyboi999/dsh-newwindows.git"
+  },
+  "homepage": "https://github.com/fancyboi999/dsh-newwindows#readme",
+  "bugs": {
+    "url": "https://github.com/fancyboi999/dsh-newwindows/issues"
+  },
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src/",
+    "cordis.patch.yml",
+    "dsh.plugin.json",
+    "Makefile",
+    "README.md",
+    "README_EN.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e": "node --experimental-strip-types scripts/test-e2e.ts",
+    "docs:lint": "node scripts/docs-lint.mjs",
+    "check": "npm run docs:lint && npm test"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=3.0.0",
+    "@deepseek-ai/schemastery": ">=3.0.0"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "context-window",
+    "compaction",
+    "codex",
+    "summary-free",
+    "notes"
+  ],
+  "author": "fancyboi999",
+  "license": "Apache-2.0"
+}

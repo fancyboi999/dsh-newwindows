@@ -1,0 +1,26 @@
+{
+  "id": "dsh-external/dsh-newwindows",
+  "version": "0.1.0",
+  "main": "./src/index.ts",
+  "description": "基于最新 Codex 架构的 DSH 免总结上下文窗口滚动、模型自主便签与范围受限历史回溯插件",
+  "engines": {
+    "dsh": ">=0.1.5-rc.1"
+  },
+  "contributes": {
+    "tools": [
+      {
+        "name": "note_action",
+        "description": "管理跨上下文窗口持久保留的结构化便签与状态目标"
+      },
+      {
+        "name": "new_context",
+        "description": "显式发起免总结上下文滚动，进入全新时序窗口"
+      },
+      {
+        "name": "lookup_raw_history",
+        "description": "有界按需回溯被阴影化的历史原始交互事件"
+      }
+    ],
+    "skills": []
+  }
+}

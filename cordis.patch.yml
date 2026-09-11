@@ -1,0 +1,9 @@
+- insert:
+    - id: dsh-newwindows
+      name: '@deepseek-ai/cordis-plugin-group'
+      group: true
+      isolate:
+        newWindows: true
+      config:
+        - id: dsh-newwindows-runtime
+          name: 'dsh-newwindows'
