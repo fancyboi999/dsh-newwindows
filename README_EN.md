@@ -4,83 +4,42 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![DeepSeek Harness](https://img.shields.io/badge/DSH-Cordis--Plugin-orange.svg)](https://github.com/deepseek-ai)
 
-[English](README_EN.md) | [中文说明](README.md)
+[中文说明](README.md) | [English](README_EN.md)
 
-**dsh-newwindows** is an open-source DeepSeek Harness (DSH) extension plugin implementing **summary-free context window rollover**, **model-authored notes**, and **scoped raw history lookup**, inspired by the context management architecture of modern OpenAI Codex.
+**dsh-newwindows** is a performance-oriented extension plugin for DeepSeek Harness (DSH/Cordis). Inspired by the modern OpenAI Codex runtime context architecture, it delivers **Summary-Free Context Rollover**, **Model-Authored Notes**, and **Scoped Raw History Lookup**.
 
----
-
-## 1. Motivation: Beyond Lossy LLM Summarization
-
-In long-running, multi-step coding agent sessions, traditional context compaction relies on invoking an LLM to generate recursive text summaries (`compaction-basic`). This legacy approach introduces severe production bottlenecks:
-
-| Dimension | Legacy Summarization Compaction | `dsh-newwindows` Rollover |
-|---|---|---|
-| **API Cost & Latency** | Consumes hundreds of output tokens and blocks for 5–20 seconds | **Zero LLM tokens**, sub-millisecond local surface folding |
-| **Information Fidelity** | High risk of hallucination and loss of file paths, identifiers, or error messages | **Zero loss of crucial state** via structured notes; raw log remains 100% immutable |
-| **KV Cache Retention** | Rewritten history breaks prompt prefix cache on the provider | **Maintains clean prefixes** across discrete window boundaries |
-| **Window Tracking** | Single linear thread with ambiguous history | **Independently numbered window chain** (`UUIDv7` monotonic progression) |
-| **Historical Recall** | Shadowed messages are lost to model attention | **Scoped raw history lookup** on demand without inflating prompt tokens |
+Eliminate sluggish, lossy LLM recursive summarization and empower your agents with microsecond-level, deterministic context relay during long-horizon tasks.
 
 ---
 
-## 2. Core Capabilities
+## ✨ Key Features
 
-### 2.1 Model-Authored Notes (`note_action`)
-Allows agents to actively record, update, search, and delete structured notes (goals, architectural invariants, state machine flags) during reasoning:
-- Session-scoped persistence;
-- Strict length and count bounding (`maxNotes`, `maxNoteChars`);
-- Automatic formatting as seed context for fresh context windows.
-
-### 2.2 Summary-Free Context Rollover (`new_context`)
-Replaces linear history expansion with clean window progression:
-- Explicit `new_context` tool with `executionMode: { kind: 'exclusive' }`;
-- **Tool-Batch Delay Barrier**: Never folds mid-tool batch! Concludes turn and delays surface folding (`surfaceOp: 'replace'`) until all paired tool results land;
-- **Node 0 Protection**: System prompt (Node 0) is permanently preserved; only conversation turns are shadowed.
-
-### 2.3 Scoped Raw History Lookup (`lookup_raw_history`)
-Enables agents to query slices of earlier, shadowed conversation windows:
-- Strict bounding (`limit` capped, individual events truncated);
-- Direct access to immutable append-only event logs;
-- Filter by role (`user`, `assistant`, `tool`, `system`).
-
-### 2.4 Single-Shot Budget Reminder
-- Emits a single, targeted advisory when context approaches threshold (e.g. 75%);
-- **Interlocked**: Emits at most once per window ID, preventing prompt pollution.
+- ⚡ **Zero-Token Summary-Free Rollover**: Bypasses costly recursive LLM summarization. Leverages DSH surface replacement for sub-millisecond context reset, completely eliminating 5~20 second stalls and token billing overhead.
+- 🛡️ **Node 0 Absolute Invariant**: Permanent retention of initial system prompts (`startSeq = 1`). Never loses core identity, system rules, or global tool specifications across window transitions.
+- 📝 **Model-Authored Notes**: Agents actively curate architectural decisions and pending tasks during reasoning. Active notes are automatically formatted and injected as deterministic seeds into new windows.
+- 🔒 **Concurrency & Tool Safety Barrier**: The `new_context` tool declares exclusive execution. Latched state machines postpone compaction until the step boundary, guaranteeing all concurrent tool calls and results pair completely before rollover.
+- ⏱️ **Single-Shot Budget Reminder**: Triggers a gentle reminder when approaching budget boundaries (e.g. 75%). State-latched de-duplication prevents context spamming.
+- 🔍 **Scoped Raw History Lookup**: Immutable physical logs remain intact. Provides a bounded, read-only inspection tool with strict pagination and per-item character truncation.
 
 ---
 
-## 3. Architecture & Safety Invariants
+## 💡 Comparison Matrix
 
-```
-+-------------------------------------------------------------------------+
-|                              DSH Session                                |
-|   +-----------------------------------------------------------------+   |
-|   | 1. Model-Authored Notes (NotesStore)                            |   |
-|   |    - Structured storage, tagged, bounded, session-isolated      |   |
-|   +-----------------------------------------------------------------+   |
-|                                    v                                    |
-|   +-----------------------------------------------------------------+   |
-|   | 2. Step-Boundary Surface Folding (NewWindowsCompactionEngine)   |   |
-|   |    - Node 0 Protected (startSeq = 1)                            |   |
-|   |    - Tool results paired first (concludeTurn interlock)         |   |
-|   |    - surfaceOp: 'replace' seeds new window with active notes    |   |
-|   +-----------------------------------------------------------------+   |
-|                                    v                                    |
-|   +-----------------------------------------------------------------+   |
-|   | 3. Bounded History Recall (lookup_raw_history)                  |   |
-|   |    - Immutable append-only event replay                         |   |
-|   +-----------------------------------------------------------------+   |
-+-------------------------------------------------------------------------+
-```
+| Evaluation Dimension | Traditional LLM Compaction (`compaction-basic`) | `dsh-newwindows` Rollover |
+| :--- | :--- | :--- |
+| **Latency & Token Cost** | Consumes 1k~4k tokens, blocks for 5~20 seconds | **Zero inference tokens**, microsecond local surface replacement |
+| **Fidelity & Precision** | Hallucination prone; loses exact paths, lines, and errors | **Zero loss on key decisions** via structured notes; raw logs kept intact |
+| **Prompt Caching** | Rewriting chat history shatters backend KV cache | Discrete windows preserve deterministic system prefixes |
+| **Traceability** | Ambiguous, flattened conversational history | **Monotonic window chain** tracked via UUIDv7 and sequential indexes |
+| **History Recyclability** | Summarized history is permanently inaccessible | Dedicated bounded tool enables on-demand retrospective lookup |
 
 ---
 
-## 4. Installation & Usage
+## 🚀 Installation & Setup
 
-### 4.1 Via Cordis Configuration (`cordis.patch.yml`)
+### Option 1: Via Cordis Bundle Patch (`cordis.patch.yml`)
 
-Add `dsh-newwindows` to your DSH bundle configuration:
+Declare the plugin in your DSH bundle configuration:
 
 ```yaml
 - insert:
@@ -94,7 +53,7 @@ Add `dsh-newwindows` to your DSH bundle configuration:
           name: 'dsh-newwindows'
 ```
 
-### 4.2 Programmatic Usage
+### Option 2: Programmatic Loading
 
 ```typescript
 import { Context } from '@deepseek-ai/cordis'
@@ -102,7 +61,7 @@ import plugin from 'dsh-newwindows'
 
 const ctx = new Context()
 
-// Mount plugin with custom thresholds
+// Load plugin with custom configuration
 await ctx.plugin(plugin, {
   auto: true,
   reminderThresholdRatio: 0.75,
@@ -110,35 +69,55 @@ await ctx.plugin(plugin, {
   maxNotes: 30,
 })
 
-// Access service
+// Access registered services from context
 const { notesStore, windowChain, engine } = ctx.newWindows
 ```
 
 ---
 
-## 5. Testing & Verification
+## ⚙️ Configuration Options
 
-### Unit & Invariant Tests (100% Pass)
-Run the native Node.js test suite:
-```bash
-npm test
-```
+The plugin accepts the following parameters during initialization:
 
-### Live Model End-to-End Verification
-Test with real models (e.g. official DeepSeek API or any OpenAI-compatible gateway):
-```bash
-# Configure .env
-DEEPSEEK_API_KEY=your_key_here
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
-
-# Run live verification
-npm run test:e2e
-```
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `auto` | `boolean` | `true` | Automatically track context usage and trigger overflow rollover |
+| `reminderThresholdRatio` | `number` | `0.75` | Budget ratio to emit a single-shot reminder to organize notes |
+| `overflowThresholdRatio` | `number` | `0.90` | Hard budget ratio to enforce context rollover |
+| `maxNotes` | `number` | `30` | Maximum number of notes stored per conversation |
+| `maxNoteChars` | `number` | `4000` | Hard ceiling for total note characters |
+| `seedGoalPrompt` | `string` | `"Continue execution..."` | Guidance prompt appended with active notes into the fresh window |
 
 ---
 
-## 6. License & Attribution
+## 🤖 Contributed Agent Tools
 
-- Released under the [Apache-2.0 License](LICENSE).
-- Core design patterns inspired by [OpenAI Codex](https://github.com/openai/codex) context compaction and window lifecycle algorithms.
+Once activated, `dsh-newwindows` equips the agent with three specialized tools:
+
+### 1. `note_action`
+- **Purpose**: Structured state scratchpad.
+- **Actions**: `create`, `update`, `delete`, `list`.
+- **Use Case**: Allows the agent to persistently retain technical milestones, constraints, and pending todos across window rollovers.
+
+### 2. `new_context`
+- **Purpose**: Explicit window rollover trigger.
+- **Mechanism**: Declares exclusive execution mode. The agent initiates rollover upon phase completion or high context usage, specifying `next_goal` to cleanly start a fresh window.
+
+### 3. `lookup_raw_history`
+- **Purpose**: Safe diagnostic probe over archived interactions.
+- **Mechanism**: Provides bounded, read-only pagination over shadowed raw events with optional role filtering (`user`, `assistant`, `tool`).
+
+---
+
+## 📖 Architecture & Developer Documentation
+
+- Core architecture & invariant design: [System Design Spec](docs/design.md)
+- DSH internal interface reconciliation: [DSH Integration Guide](docs/dsh-integration.md)
+- Test suite & verification matrix: [Validation Matrix](docs/validation.md)
+
+---
+
+## 📄 License
+
+Licensed under the [Apache-2.0 License](LICENSE).
+Core mechanisms inspired by the [OpenAI Codex](https://github.com/openai/codex) context management architecture.
