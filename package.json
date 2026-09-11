@@ -41,13 +41,19 @@
   },
   "keywords": [
     "deepseek-harness",
+    "deepseek",
     "dsh",
+    "dsh-plugin",
     "cordis",
     "context-window",
+    "context-management",
     "compaction",
     "codex",
     "summary-free",
-    "notes"
+    "prompt-cache",
+    "notes",
+    "ai-agent",
+    "llm-agent"
   ],
   "author": "fancyboi999",
   "license": "Apache-2.0"
